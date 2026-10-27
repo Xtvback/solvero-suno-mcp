@@ -6,7 +6,11 @@ services:
     autoDeployTrigger: commit
     healthCheckPath: /health
     envVars:
-      - key: MCP_BEARER_TOKEN
-        generateValue: true
+      - key: AUTH0_ISSUER
+        value: "https://solvero-mcp.eu.auth0.com/"
+      - key: AUTH0_AUDIENCE
+        value: "https://solvero-suno-mcp.onrender.com/mcp"
+      - key: AUTH0_REQUIRED_SCOPE
+        value: "mcp:tools"
       - key: PORT
         value: "10000"

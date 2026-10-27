@@ -1,14 +1,15 @@
 # OAuth rollout checklist
 
-1. Register the two MCP resources with an OAuth provider supporting the ChatGPT connector flow.
-2. Record the provider's issuer and JWKS endpoints; do not guess them.
-3. Configure each resource's distinct audience and required scope.
-4. Implement protected-resource metadata and OAuth discovery.
-5. Verify JWT signatures using provider JWKS; validate issuer, audience, expiry and scopes.
-6. Test missing, malformed, expired and wrong-audience tokens.
-7. Test authorized MCP initialize and tools/list requests end-to-end.
-8. Enable OAuth in a staging deployment before removing the existing bearer-token fallback.
-9. Register both HTTPS MCP endpoints in ChatGPT and validate login.
-10. Only then explore Suno/DistroKid provider integrations.
+1. [x] Register the resource in Auth0 with its distinct audience and `mcp:tools` scope.
+2. [x] Publish RFC 9728 protected-resource metadata.
+3. [x] Validate Auth0 RS256 JWT signatures, issuer, audience, lifetime and scope.
+4. [x] Return a discoverable `WWW-Authenticate` challenge on unauthorized MCP requests.
+5. [x] Test missing, malformed, expired and wrong-audience tokens offline.
+6. [ ] Enable Auth0's Resource Parameter Compatibility Profile for the tenant.
+7. [ ] Configure the predefined ChatGPT OAuth client callback and grants in Auth0.
+8. [ ] Deploy the OAuth build on Render Free and verify metadata plus `401` behavior.
+9. [ ] Register the HTTPS MCP endpoint in ChatGPT with the predefined OAuth client.
+10. [ ] Complete an interactive login and test initialize, tools/list and tool calls end-to-end.
 
-Current status: **planning only**. This repository does not yet support OAuth.
+The static bearer fallback has been removed. `/health` and protected-resource metadata are
+public; `/mcp` requires a valid Auth0 access token with `mcp:tools`.

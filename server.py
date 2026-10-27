@@ -3,8 +3,17 @@ import json
 import os
 from pathlib import Path
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
-app = FastMCP("Solvero Suno")
+PUBLIC_HOST = os.environ.get("SOLVERO_PUBLIC_HOST", "solvero-suno-mcp.onrender.com")
+app = FastMCP(
+    "Solvero Suno",
+    transport_security=TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=[PUBLIC_HOST, f"{PUBLIC_HOST}:*", "localhost:*", "127.0.0.1:*"],
+        allowed_origins=["https://chatgpt.com"],
+    ),
+)
 DATA_DIR = Path(os.environ.get("SOLVERO_DATA_DIR", "./data")).resolve()
 CATALOGUE = DATA_DIR / "songs.json"
 
