@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: solvero-suno-mcp
+    runtime: docker
+    plan: free
+    autoDeployTrigger: commit
+    healthCheckPath: /health
+    envVars:
+      - key: MCP_BEARER_TOKEN
+        generateValue: true
+      - key: PORT
+        value: "10000"
