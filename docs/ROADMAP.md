@@ -1,20 +1,23 @@
 # Roadmap: remote MCP and integrations
 
 ## Current security boundary
-- Local MCP via stdio only. No remote HTTPS endpoint and no OAuth yet.
+- Local MCP is available via stdio. The remote Streamable HTTP endpoint is deployed on Render Free and protected by Auth0 OAuth.
+- `/mcp` requires an RS256 token with the correct issuer, audience, lifetime and `mcp:tools` scope.
+- `/health` and RFC 9728 protected-resource metadata are intentionally public.
 - No API keys, tokens or passwords should be committed to this public repository.
 - The local catalogue/manifest is not a cloud database. Treat its contents as private.
 - Files are not uploaded to Suno or DistroKid by this project.
 
-## Remote deployment (future)
-1. Choose a hosting provider with persistent HTTPS and secrets management.
-2. Implement Streamable HTTP transport and authentication compatible with ChatGPT's connector requirements.
-3. Require authorization for every tool, apply rate limits, and scope access to one owner.
-4. Validate input, audit data handling, and test access controls before enabling remote access.
-5. Configure the connector only after an externally reachable authenticated endpoint exists.
+## Remote deployment status
+1. [x] Publish the Streamable HTTP endpoint over HTTPS on Render Free.
+2. [x] Implement Auth0 discovery, protected-resource metadata and JWT validation.
+3. [x] Require authorization for every MCP request.
+4. [x] Test the local MCP protocol and the public authentication boundary.
+5. [ ] Register the connector in ChatGPT and complete the first interactive login and tool call.
+6. [ ] Add durable storage and rate limiting before storing important or multi-user data.
 
 ## Provider integrations
 Suno: verify the official developer/API offering, account eligibility, licensing and permitted operations before adding any API calls. Avoid unofficial scraping or credential sharing.
 
 ## Verification
-GitHub Actions performs Python syntax checks and offline unit tests. Those tests do not verify provider APIs, deployment, OAuth or actual publication.
+Offline tests cover syntax, OAuth validation and MCP routing. Live checks cover the Render health, metadata and unauthorized boundary. They do not test a real Suno account, a completed ChatGPT login or publication.

@@ -10,12 +10,14 @@ The remote server validates Auth0-issued RS256 access tokens. `/health` and the 
 - Unauthorized requests return a Bearer challenge pointing to protected-resource metadata.
 - No Auth0 client secret is stored in this resource server.
 
-## Deployment requirements
+## Tenant and deployment status
 
-- Enable Auth0's Resource Parameter Compatibility Profile.
-- Keep the ChatGPT OAuth client separate from this API resource and configure the exact ChatGPT callback.
+- Auth0's Resource Parameter Compatibility Profile is enabled.
+- The ChatGPT OAuth client is separate from this API resource and uses the official callback.
+- The client allows Authorization Code and Refresh Token grants; Implicit and Client Credentials are disabled.
+- The OAuth build is deployed on Render Free and its metadata plus unauthorized responses have been checked live.
 - Never log or commit client secrets, codes, refresh tokens or private user content.
-- Complete an interactive ChatGPT login and MCP tool test before calling the integration production-ready.
+- Register the endpoint in ChatGPT and complete an interactive login plus MCP tool test before calling the integration production-ready.
 
 ## Current limitations
 
