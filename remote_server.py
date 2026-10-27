@@ -9,7 +9,8 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from starlette.applications import Starlette
-from starlette.routing import Mount
+from starlette.routing import Mount, Route
+from starlette.responses import JSONResponse
 
 from server import app as mcp
 
@@ -17,12 +18,15 @@ token = os.environ.get("MCP_BEARER_TOKEN", "")
 if len(token) < 32:
     raise RuntimeError("Set MCP_BEARER_TOKEN to a random secret of at least 32 characters.")
 
+async def health(request):
+    return JSONResponse({"status": "ok"})
+
 class BearerAuth:
     def __init__(self, app):
         self.app = app
 
     async def __call__(self, scope, receive, send):
-        if scope["type"] == "http":
+        if scope["type"] == "http" and scope.get("path") != "/health":
             headers = dict(scope.get("headers", []))
             supplied = headers.get(b"authorization", b"").decode("latin-1")
             expected = "Bearer " + token
@@ -40,7 +44,7 @@ async def lifespan(app):
     async with mcp.session_manager.run():
         yield
 
-web_app = Starlette(routes=[Mount("/mcp", app=mcp.streamable_http_app())], lifespan=lifespan)
+web_app = Starlette(routes=[Route("/health", health, methods=["GET"]), Mount("/mcp", app=mcp.streamable_http_app())], lifespan=lifespan)
 application = BearerAuth(web_app)
 
 if __name__ == "__main__":
