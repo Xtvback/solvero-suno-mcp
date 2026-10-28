@@ -39,4 +39,21 @@ jobs:
         run: node --experimental-strip-types --test tests/test-state-gate.mjs
       - name: Exercise actual local D1 runtime via Miniflare (no deploy)
         working-directory: cloudflare-experimental
-        run: npm run test:d1
+        run: timeout 90s npm run test:d1
+      - name: Probe fail-closed OAuth routes in local Wrangler (no deployment)
+        working-directory: cloudflare-experimental
+        run: |
+          npx wrangler dev --config wrangler-auth-local.json --local --ip 127.0.0.1 --port 8788 > /tmp/solvero-auth-wrangler.log 2>&1 &
+          p=$!
+          trap 'kill "$p" 2>/dev/null || true' EXIT
+          for i in $(seq 1 35); do
+            if curl -fsS -o /dev/null http://127.0.0.1:8788/unknown 2>/dev/null; then break; fi
+            if curl -sS -o /dev/null http://127.0.0.1:8788/authorize 2>/dev/null; then break; fi
+            sleep 1
+          done
+          status() { curl -sS -o /dev/null -w '%{http_code}' "$@"; }
+          a=$(status http://127.0.0.1:8788/authorize)
+          b=$(status 'http://127.0.0.1:8788/google/callback?state=synthetic&code=synthetic')
+          c=$(status -X POST -d 'id=synthetic&csrf=synthetic&decision=approve' http://127.0.0.1:8788/consent)
+          echo "Local OAuth route statuses: authorize=$a callback=$b consent=$c"
+          test "$a" = 503 && test "$b" = 503 && test "$c" = 403 || { cat /tmp/solvero-auth-wrangler.log; exit 1; }
