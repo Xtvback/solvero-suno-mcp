@@ -1,0 +1,30 @@
+name: Free browser transfer smoke test
+on:
+  push:
+    branches:
+      - feature/free-local-mp3-transfer
+    paths:
+      - ".github/workflows/free-browser-transfer.yml"
+      - "tests/browser_transfer_smoke.py"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  transfer-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: |
+          python -m pip install "playwright>=1.50,<2"
+          python -m playwright install --with-deps chromium
+      - name: Capture browser-generated download
+        run: python tests/browser_transfer_smoke.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: safe-transfer-smoke-test
+          path: transfer-test/test-transfer.txt
+          retention-days: 1
