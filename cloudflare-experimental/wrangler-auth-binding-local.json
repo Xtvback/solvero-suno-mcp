@@ -1,0 +1,15 @@
+{
+  "name": "solvero-auth-binding-local",
+  "main": "auth-server/local-test.ts",
+  "compatibility_date": "2026-10-28",
+  "compatibility_flags": [
+    "global_fetch_strictly_public"
+  ],
+  "workers_dev": false,
+  "kv_namespaces": [
+    {
+      "binding": "OAUTH_KV",
+      "id": "00000000000000000000000000000000"
+    }
+  ]
+}
