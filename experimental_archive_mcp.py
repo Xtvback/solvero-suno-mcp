@@ -1,53 +1,62 @@
-"""Isolated experimental MCP entrypoint; NEVER mount as production server.
-
-Only synthetic fixtures are allowed. Commit deliberately fails closed until durable
-authorization, state binding, and source identity verification are implemented.
-"""
-import hashlib
+"""Synthetic-only experimental MCP; never imported by production server."""
+import os
 import tempfile
 from pathlib import Path
 from mcp.server.fastmcp import FastMCP
-from archive_rules import plan_song_archive
+from tools.archive_approval_store import ApprovalStore
 from tools.archive_song import ArchiveRequest, archive_song_prepare
 
-experimental_app = FastMCP("Solvero Archive Experiment")
-
+experimental_app=FastMCP("Solvero Archive Experiment")
 class ReadOnlySyntheticPort:
-    def list_names(self, folder_id):
-        return []
+    def list_names(self,folder_id): return []
+
+def _db_path():
+    return Path(os.environ.get("SOLVERO_EXPERIMENT_APPROVAL_DB", str(Path(tempfile.gettempdir())/"solvero-experimental-approvals.sqlite3")))
+
+def _identity():
+    # Trust only an injected server-side authenticated principal.
+    # Never trust a user-supplied MCP tool parameter for identity.
+    principal=os.environ.get("SOLVERO_EXPERIMENT_AUTHENTICATED_PRINCIPAL","")
+    if not principal.strip(): raise PermissionError("Authenticated identity unavailable")
+    return principal
+
+def _fixture(suno_url,band,title):
+    with tempfile.TemporaryDirectory(prefix="solvero-synthetic-only-") as td:
+        root=Path(td)
+        a=root/"synthetic.mp3";c=root/"synthetic.png";m=root/"synthetic.json"
+        a.write_bytes(b"ID3"+bytes(range(256))*3)
+        c.write_bytes(b"synthetic-PNG-fixture")
+        req=ArchiveRequest(a,c,m,suno_url,band,title,"synthetic fixture, not Suno",True)
+        prepared=archive_song_prepare(req,ReadOnlySyntheticPort(),c2pa_result={"status":"not_checked","synthetic":True})
+        return {"files":[{"name":x["destination_name"],"sha256":x["sha256"]} for x in prepared["package"]["files"]],
+                "folder_id":prepared["package"]["drive_folder_id"],"synthetic_only":True}
+
+def _permissions(principal):
+    # Snapshot is synthetic. Real Drive permission verification remains blocked.
+    return {"principal":principal,"scope":"synthetic-only","upload_allowed":False}
 
 @experimental_app.tool()
-def archive_song(stage: str, suno_url: str = "", band: str = "Static Riot",
-                 title: str = "Synthetic Test", confirmation: str = "") -> dict:
-    """Synthetic-only C2PA-safe archive preview. Uploads always disabled.
-
-    stage: 'prepare' builds a synthetic package, 'commit' is blocked until
-    durable confirmation state and real connector authorization are validated.
-    """
-    if stage == "commit":
-        return {"status":"blocked","uploaded":False,
-                "reason":"Durable state, source identity and connector authorization not yet validated"}
-    if stage != "prepare":
+def archive_song(stage:str,suno_url:str="",band:str="Static Riot",title:str="Synthetic Test",
+                 request_id:str="",confirmation:str="")->dict:
+    """Synthetic archive approval; prepare persists SQLite, commit consumes approval but never uploads."""
+    principal=_identity()
+    if not suno_url: raise ValueError("Canonical Suno URL required")
+    package=_fixture(suno_url,band,title)
+    permissions=_permissions(principal)
+    store=ApprovalStore(_db_path())
+    try:
+        if stage=="prepare":
+            result=store.prepare(principal,package,permissions,ttl=600)
+            return {"status":"awaiting_confirmation","uploaded":False,"synthetic_only":True,
+                    "request_id":result["request_id"],"confirmation":result["confirmation"],
+                    "expires_at":result["expires_at"],"files":package["files"],
+                    "persistent_state":True,"commit_enabled":False}
+        if stage=="commit":
+            if not request_id or not confirmation:raise PermissionError("Request ID and confirmation required")
+            result=store.confirm(request_id,principal,confirmation,package,permissions)
+            return {"status":"blocked","approval_status":result["status"],"uploaded":False,
+                    "reason":"Real uploads disabled; synthetic approval consumed"}
         raise ValueError("stage must be prepare or commit")
-    if not suno_url:
-        raise ValueError("Canonical Suno song URL required for archive planning")
-    with tempfile.TemporaryDirectory(prefix="solvero-synthetic-only-") as tmp:
-        folder=Path(tmp)
-        audio=folder/"synthetic.mp3"
-        cover=folder/"synthetic.png"
-        manifest=folder/"synthetic.json"
-        audio.write_bytes(b"ID3"+bytes(range(256))*3)
-        cover.write_bytes(b"synthetic-PNG-fixture")
-        request=ArchiveRequest(audio,cover,manifest,suno_url,band,title,
-            "synthetic fixture, not Suno",True)
-        prepared=archive_song_prepare(request,ReadOnlySyntheticPort(),
-            c2pa_result={"status":"not_checked","synthetic":True})
-        return {"status":"awaiting_confirmation","uploaded":False,"synthetic_only":True,
-            "confirmation_required":True,
-            "confirmation_phrase":prepared["confirmation_phrase"],
-            "files":[{"name":item["destination_name"],"sha256":item["sha256"]}
-                     for item in prepared["package"]["files"]],
-            "commit_enabled":False,"persistent_state":False}
+    finally:store.close()
 
-if __name__ == "__main__":
-    experimental_app.run(transport="stdio")
+if __name__=="__main__":experimental_app.run(transport="stdio")
