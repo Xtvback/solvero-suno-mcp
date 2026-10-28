@@ -123,6 +123,7 @@ jobs:
           wrong_audience=$(issue '{"audience":"http://127.0.0.1:8799/other"}')
           expired=$(issue '{"expires":-1000}')
           code() { curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $1" http://127.0.0.1:8799/mcp; }
+          echo "Bound no-scope=$(code "$no_scope") wrong-audience=$(code "$wrong_audience") expired=$(code "$expired")"
           test "$(code "$no_scope")" = 403
           test "$(code "$wrong_audience")" = 401
           test "$(code "$expired")" = 401
