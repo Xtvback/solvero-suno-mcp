@@ -1,7 +1,17 @@
 {
   "private": true,
   "type": "module",
-  "scripts": {"check": "tsc --noEmit"},
-  "dependencies": {"@cloudflare/workers-oauth-provider": "^1.2.4"},
-  "devDependencies": {"@cloudflare/workers-types": "*", "typescript": "^5.9.0"}
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test:d1": "node --experimental-strip-types --test tests/local-d1.test.mjs"
+  },
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "^1.2.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "*",
+    "typescript": "^5.9.0",
+    "miniflare": "^4.0.0",
+    "wrangler": "^4.0.0"
+  }
 }
