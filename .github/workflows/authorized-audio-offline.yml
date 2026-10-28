@@ -32,3 +32,5 @@ jobs:
         run: python -m unittest discover -s tests -p "test_drive_connector_adapter.py" -v
       - name: Verify two-stage archive_song integration (synthetic)
         run: python -m unittest discover -s tests -p "test_archive_song.py" -v
+      - name: Validate persisted archive approval and replay protection
+        run: python -m unittest discover -s tests -p "test_archive_approval_store.py" -v
