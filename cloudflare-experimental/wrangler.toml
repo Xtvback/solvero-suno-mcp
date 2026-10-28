@@ -1,0 +1,9 @@
+name = "solvero-archive-experimental"
+main = "src/index.js"
+compatibility_date = "2026-10-28"
+workers_dev = true
+# Add D1 binding only after creating a dedicated experimental database.
+# [[d1_databases]]
+# binding = "APPROVALS_DB"
+# database_name = "solvero-archive-experimental"
+# database_id = "<your-experimental-d1-database-id>"
