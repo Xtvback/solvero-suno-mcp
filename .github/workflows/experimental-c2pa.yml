@@ -1,0 +1,65 @@
+name: Experimental C2PA public fixtures
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/experimental-c2pa.yml"
+permissions:
+  contents: read
+jobs:
+  validate-public-c2pa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Install official c2patool release (public binary)
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="v0.28.1"
+          URL="https://github.com/contentauth/c2patool/releases/download/${TAG}/c2patool-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
+          curl -fLsS --retry 3 "$URL" -o /tmp/c2patool.tar.gz
+          mkdir -p /tmp/c2pa-bin
+          tar xzf /tmp/c2patool.tar.gz -C /tmp/c2pa-bin
+          BIN=$(find /tmp/c2pa-bin -type f -name c2patool -print -quit)
+          test -n "$BIN"
+          chmod +x "$BIN"
+          echo "$(dirname "$BIN")" >> "$GITHUB_PATH"
+          "$BIN" -V
+      - name: Fetch public official sample assets only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone -q --depth 1 https://github.com/contentauth/c2patool.git /tmp/c2pa-public
+          test -f /tmp/c2pa-public/sample/image.jpg
+          test -f /tmp/c2pa-public/sample/C.jpg
+          ls -lh /tmp/c2pa-public/sample/image.jpg /tmp/c2pa-public/sample/C.jpg
+      - name: Validate unsigned and signed public examples
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, subprocess
+          cases = [
+              ("unsigned", "/tmp/c2pa-public/sample/image.jpg"),
+              ("signed", "/tmp/c2pa-public/sample/C.jpg"),
+          ]
+          for label, path in cases:
+              r = subprocess.run(["c2patool", path], capture_output=True, text=True)
+              print(f"{label} exit_code={r.returncode}")
+              print(f"{label} stderr_tail={r.stderr[-350:]}")
+              try:
+                  data = json.loads(r.stdout)
+              except json.JSONDecodeError:
+                  print(f"{label} non_json_stdout_tail={r.stdout[-350:]}")
+                  raise
+              manifests = data.get("manifests", {})
+              active = data.get("active_manifest")
+              validation_status = data.get("validation_status")
+              print(f"{label} manifest_count={len(manifests)} active_manifest={bool(active)} validation_status={validation_status}")
+              if label == "unsigned":
+                  assert not active and not manifests, "Unexpected C2PA manifest in unsigned sample"
+              else:
+                  assert active and manifests, "Signed public fixture has no C2PA manifest"
+              assert r.returncode == 0, "c2patool returned a failure status"
+          PY
