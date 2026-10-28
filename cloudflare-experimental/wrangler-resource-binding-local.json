@@ -1,0 +1,13 @@
+{
+  "name": "solvero-resource-binding-local",
+  "main": "mcp-server/local-bound.ts",
+  "compatibility_date": "2026-10-28",
+  "workers_dev": false,
+  "services": [
+    {
+      "binding": "AUTH_SERVER",
+      "service": "solvero-auth-binding-local",
+      "entrypoint": "default"
+    }
+  ]
+}
