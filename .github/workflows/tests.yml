@@ -61,3 +61,6 @@ jobs:
       - name: Run synthetic OAuth flow with local D1 and mocked Google
         working-directory: cloudflare-experimental
         run: timeout 45s node --experimental-strip-types --test tests/oauth-flow.test.mjs
+      - name: Verify synthetic MCP Streamable HTTP JSON-RPC transport
+        working-directory: cloudflare-experimental
+        run: node --experimental-strip-types --test tests/mcp-transport.test.mjs
