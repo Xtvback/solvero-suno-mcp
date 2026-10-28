@@ -69,3 +69,27 @@ jobs:
       - name: Official MCP SDK client interoperability over localhost HTTP
         working-directory: cloudflare-experimental
         run: timeout 45s node --experimental-strip-types --test tests/official-mcp-client.test.mjs
+      - name: Validate OAuth resource discovery and scoped synthetic tokens via local Wrangler
+        working-directory: cloudflare-experimental
+        run: |
+          npx wrangler dev --config wrangler-mcp-local.json --local --ip 127.0.0.1 --port 8789 > /tmp/solvero-resource.log 2>&1 &
+          p=$!
+          trap 'kill "$p" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -sS -o /dev/null http://127.0.0.1:8789/mcp 2>/dev/null; then break; fi
+            sleep 1
+          done
+          status() { curl -sS -o /dev/null -w '%{http_code}' "$@"; }
+          missing=$(status http://127.0.0.1:8789/mcp)
+          invalid=$(status -H 'Authorization: Bearer not-a-token' http://127.0.0.1:8789/mcp)
+          wrong_audience=$(status -H 'Authorization: Bearer synthetic-wrong-audience' http://127.0.0.1:8789/mcp)
+          insufficient=$(status -H 'Authorization: Bearer synthetic-no-scope' http://127.0.0.1:8789/mcp)
+          meta=$(curl -fsS http://127.0.0.1:8789/.well-known/oauth-protected-resource/mcp)
+          META_JSON="$meta" python -c 'import os,json; j=json.loads(os.environ["META_JSON"]); assert j["resource"]=="http://127.0.0.1:8789/mcp"; assert "mcp:read" in j["scopes_supported"]; assert j["authorization_servers"]; print("RFC9728 protected resource metadata valid")'
+          challenge=$(curl -sSI http://127.0.0.1:8789/mcp | grep -i 'www-authenticate' || true)
+          echo "$challenge" | grep -iq 'resource_metadata'
+          payload='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"synthetic","version":"1"}}}'
+          init=$(curl -fsS -H 'Authorization: Bearer synthetic-read' -H 'Accept: application/json, text/event-stream' -H 'Content-Type: application/json' -d "$payload" http://127.0.0.1:8789/mcp)
+          INIT_JSON="$init" python -c 'import os,json; j=json.loads(os.environ["INIT_JSON"]); assert j["result"]["serverInfo"]["name"]=="solvero-synthetic-experiment"; print("Authenticated MCP initialize valid")'
+          echo "OAuth resource statuses missing=$missing invalid=$invalid wrong_audience=$wrong_audience insufficient=$insufficient"
+          test "$missing" = 401 && test "$invalid" = 401 && test "$wrong_audience" = 401 && test "$insufficient" = 403 || { cat /tmp/solvero-resource.log; exit 1; }
