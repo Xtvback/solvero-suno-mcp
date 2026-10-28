@@ -117,6 +117,6 @@ jobs:
           for token in invalid-token synthetic-read synthetic-no-scope; do
             status=$(curl --max-time 3 -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" http://127.0.0.1:8799/mcp)
             echo "Bound token [$token] status $status"
-            test "$status" = 401 || { cat /tmp/solvero-auth-bound.log /tmp/solvero-mcp-bound.log; exit 1; }
+            test "$status" = 503 || { cat /tmp/solvero-auth-bound.log /tmp/solvero-mcp-bound.log; exit 1; }
           done
-          echo "Service Binding denies synthetic/unissued tokens: OK"
+          echo "Service Binding fails closed for synthetic/unissued tokens (503): OK"
