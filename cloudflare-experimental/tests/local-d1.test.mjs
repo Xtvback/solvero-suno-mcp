@@ -7,9 +7,12 @@ const schema=await readFile(new URL("../oauth-state.sql",import.meta.url),"utf8"
 async function fixture(){
  const mf=new Miniflare({modules:true,script:'export default {fetch(){return new Response("offline")}}',
  d1Databases:{DB:"00000000-0000-4000-8000-000000000001"}});
+ try {
  const db=await mf.getD1Database("DB");
  await db.exec(schema.split("\n").filter(line=>!line.trim().startsWith("--")).join("\n").trim());
  return {db,mf};
+ } catch(error) {await mf.dispose(); throw error;}
+
 }
 test("actual local D1: concurrent login claims, expiry and browser binding",async()=>{
  const {db,mf}=await fixture();
