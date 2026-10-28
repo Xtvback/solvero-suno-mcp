@@ -44,6 +44,16 @@ jobs:
               exif[270]="SOLVERO_SYNTHETIC_METADATA_TEST"
               im.save(altered, format="JPEG", exif=exif.tobytes())
           assert original.read_bytes()!=altered.read_bytes()
+          # Insert a JPEG APP1 Exif segment directly after SOI, without decoding/re-encoding.
+          # All remaining bytes are preserved, but the C2PA asset hash may still fail.
+          import struct
+          srcbytes=original.read_bytes()
+          assert srcbytes[:2] == b"\\xff\\xd8"
+          exif_payload=b"Exif\\x00\\x00"+b"MM\\x00*\\x00\\x00\\x00\\x08\\x00\\x00\\x00\\x00\\x00\\x00"
+          app1=b"\\xff\\xe1"+struct.pack(">H",len(exif_payload)+2)+exif_payload
+          inserted=Path("/tmp/c2pa-app1-inserted.jpg")
+          inserted.write_bytes(srcbytes[:2]+app1+srcbytes[2:])
+          assert inserted.read_bytes()[2+len(app1):]==srcbytes[2:]
           PY
       - name: Compare hashes and C2PA outcomes
         shell: bash
@@ -63,6 +73,8 @@ jobs:
               return {"active":active,"codes":codes,"rc":r.returncode}
           orig=check("original","/tmp/c2pa-original.jpg")
           edited=check("metadata_edited","/tmp/c2pa-modified.jpg")
+          inserted=check("app1_inserted","/tmp/c2pa-app1-inserted.jpg")
+          print(f"comparison rewrite={edited} non_destructive_insert={inserted}")
           assert orig["active"], "Expected public original fixture to have active manifest"
           assert any("untrusted" in c for c in orig["codes"]), "Record original trust warning"
           assert orig != edited, "Expected validation state to change after JPEG EXIF rewrite"
