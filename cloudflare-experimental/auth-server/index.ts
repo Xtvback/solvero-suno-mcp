@@ -3,8 +3,8 @@ import { WorkerEntrypoint } from "cloudflare:workers";
 import {claimLogin,claimConsent} from "./state-gate";
 import {randomToken,sha256url,googleLoginUrl,exchangeGoogleCode,verifyGoogleIdToken, type PendingLogin} from "./google-oidc";
 interface Env { OAUTH_KV: KVNamespace; APPROVALS_DB:D1Database; GOOGLE_CLIENT_ID?:string; GOOGLE_CLIENT_SECRET?:string }
-export const RESOURCE="https://solvero-archive-experimental.example.invalid/mcp";
-export const ISSUER="https://solvero-auth-experimental.example.invalid";
+const RESOURCE="https://solvero-archive-experimental.example.invalid/mcp";
+const ISSUER="https://solvero-auth-experimental.example.invalid";
 const server=new OAuthAuthorizationServer<Env>({
  issuer:ISSUER,resources:[RESOURCE],scopesSupported:["mcp:read","offline_access"],clientIdMetadataDocumentEnabled:true
 });
