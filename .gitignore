@@ -4,3 +4,9 @@ __pycache__/
 .env
 .env.*
 data/
+
+# Sensitive browser authentication data
+playwright/.auth/
+.auth/
+*storage-state*.json
+*auth-state*.json
