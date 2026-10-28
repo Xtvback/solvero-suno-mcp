@@ -93,3 +93,30 @@ jobs:
           INIT_JSON="$init" python -c 'import os,json; j=json.loads(os.environ["INIT_JSON"]); assert j["result"]["serverInfo"]["name"]=="solvero-synthetic-experiment"; print("Authenticated MCP initialize valid")'
           echo "OAuth resource statuses missing=$missing invalid=$invalid wrong_audience=$wrong_audience insufficient=$insufficient"
           test "$missing" = 401 && test "$invalid" = 401 && test "$wrong_audience" = 401 && test "$insufficient" = 403 || { cat /tmp/solvero-resource.log; exit 1; }
+      - name: Test local RFC8414 and connected Cloudflare Service Binding (no deployment)
+        working-directory: cloudflare-experimental
+        run: |
+          npx wrangler dev --config wrangler-auth-binding-local.json --local --ip 127.0.0.1 --port 8788 > /tmp/solvero-auth-bound.log 2>&1 &
+          auth_pid=$!
+          npx wrangler dev --config wrangler-resource-binding-local.json --local --ip 127.0.0.1 --port 8789 > /tmp/solvero-mcp-bound.log 2>&1 &
+          mcp_pid=$!
+          trap 'kill "$auth_pid" "$mcp_pid" 2>/dev/null || true' EXIT
+          for i in $(seq 1 25); do
+            auth_code=$(curl --max-time 2 -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8788/.well-known/oauth-authorization-server || true)
+            mcp_code=$(curl --max-time 2 -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8789/mcp || true)
+            if [ "$auth_code" = "200" ] && [ "$mcp_code" = "401" ]; then break; fi
+            sleep 1
+          done
+          echo "Issuer discovery=$auth_code resource challenge=$mcp_code"
+          if [ "$auth_code" != "200" ] || [ "$mcp_code" != "401" ]; then cat /tmp/solvero-auth-bound.log /tmp/solvero-mcp-bound.log; exit 1; fi
+          curl -fsS http://127.0.0.1:8788/.well-known/oauth-authorization-server | python -c 'import json,sys; d=json.load(sys.stdin); assert d["issuer"]=="http://127.0.0.1:8788"; assert "S256" in d["code_challenge_methods_supported"]; assert "revocation_endpoint" in d; print("RFC8414 issuer discovery with PKCE and revocation: OK")'
+          curl -fsS http://127.0.0.1:8789/.well-known/oauth-protected-resource/mcp | python -c 'import json,sys; d=json.load(sys.stdin); assert d["resource"]=="http://127.0.0.1:8789/mcp"; assert "http://127.0.0.1:8788" in d["authorization_servers"]; print("RFC9728 resource metadata: OK")'
+          challenge=$(curl -sD - -o /dev/null http://127.0.0.1:8789/mcp)
+          echo "$challenge" | grep -qi 'WWW-Authenticate: Bearer'
+          echo "$challenge" | grep -qi 'resource_metadata'
+          for token in invalid-token synthetic-read synthetic-no-scope; do
+            status=$(curl --max-time 3 -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" http://127.0.0.1:8789/mcp)
+            echo "Bound token [$token] status $status"
+            test "$status" = 401 || { cat /tmp/solvero-auth-bound.log /tmp/solvero-mcp-bound.log; exit 1; }
+          done
+          echo "Service Binding denies synthetic/unissued tokens: OK"
