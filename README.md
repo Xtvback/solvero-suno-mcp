@@ -2,11 +2,19 @@
 
 Servidor MCP experimental em Python, disponível localmente por **stdio** e remotamente por **Streamable HTTP**.
 
-## Funcionalidades v0.1
+## Funcionalidades
 - Preparar briefs musicais para Suno
 - Guardar e consultar um catálogo local de músicas
+- Preparar num único fluxo a geração Suno, a capa e o handoff DistroKid
+- Separar a letra com marcações para geração da letra simples para distribuição
+- Validar localmente áudio, formato/dimensões da capa e metadados antes do handoff
+- Manter geração, uploads e publicação bloqueados até aprovação explícita
 
-**Limitações:** Não existe ligação ativa à conta Suno. O projeto não gera, descarrega, envia ou publica músicas na plataforma.
+**Limitações:** Não existe ligação ativa à conta Suno. `prepare_music_project`
+cria o plano completo, mas não gera, descarrega, envia ou publica. A submissão
+final no DistroKid permanece sempre um clique manual do utilizador.
+
+Consultar `docs/CHAT_PRODUCTION_FLOW.md` para o fluxo conversacional completo.
 
 ## Executar localmente
 
