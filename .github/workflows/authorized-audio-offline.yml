@@ -30,3 +30,5 @@ jobs:
         run: python -m unittest discover -s tests -p "test_safe_drive_transfer.py" -v
       - name: Validate connector adapter identity gates and failure scenarios
         run: python -m unittest discover -s tests -p "test_drive_connector_adapter.py" -v
+      - name: Verify two-stage archive_song integration (synthetic)
+        run: python -m unittest discover -s tests -p "test_archive_song.py" -v
