@@ -15,7 +15,7 @@ paid Cloudflare resource is used. No real MCP access token can be issued here.
 - `auth-server/local-test.ts` and `mcp-server/local-bound.ts`: **test-only**
   Workers with synthetic bearer tokens. The local fixture issues test UUIDs
   through `/__synthetic/issue`, and revokes them via `/__synthetic/revoke`.
-  It does not generate a real OAuth access token or complete Authorization Code.
+  It does not generate a real OAuth access token or complete real Authorization Code.\n  The test-only `/__synthetic/code` and `/__synthetic/exchange` paths exercise\n  S256 PKCE and one-time code consumption backed by local D1.
 - `wrangler-auth-binding-local.json` and `wrangler-resource-binding-local.json`
   configure local service binding over ports 8798/8799 without public routes.
   These are not deployment configurations.
@@ -52,10 +52,10 @@ file manually**. Only deploy reviewed production entrypoints.
 
 * **Verified in synthetic local tests:** OAuth metadata RFC 8414 on the
   127.0.0.1 issuer, protected resource metadata RFC 9728, MCP JSON-RPC
-  Streamable HTTP initialization, tools listing, token audience, missing
+  Streamable HTTP initialization, tools listing, synthetic PKCE S256 code\n  exchange/replay, token audience, missing
   scopes, expiration, simulated revocation, local Service Binding.
 * **Not yet verified:** actual Google OpenID Connect consent end-to-end,
-  authorization-code issuance and PKCE exchange/replay across both Workers,
+  real authorization-code issuance and PKCE exchange/replay across both Workers,
   token refresh, real ChatGPT connector behavior, real remote HTTPS origins,
   and hardening of every network/revocation failure mode.
 * The prior issuer configured with `.example.invalid` does not match
