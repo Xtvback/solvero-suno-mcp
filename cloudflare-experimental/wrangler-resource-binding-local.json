@@ -6,8 +6,7 @@
   "services": [
     {
       "binding": "AUTH_SERVER",
-      "service": "solvero-auth-binding-local",
-      "entrypoint": "default"
+      "service": "solvero-auth-binding-local"
     }
   ]
 }
