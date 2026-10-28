@@ -25,6 +25,8 @@ jobs:
           echo "$(dirname "$BIN")" >> "$GITHUB_PATH"
           "$BIN" --version
           python -m pip install "mutagen>=1.47,<2" "Pillow>=10,<13"
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
           ffmpeg -version | head -n 1
       - name: Make synthetic tone, sign and edit isolated copies
         shell: bash
