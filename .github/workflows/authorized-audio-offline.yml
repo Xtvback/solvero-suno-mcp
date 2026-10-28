@@ -26,3 +26,5 @@ jobs:
         run: python -m unittest discover -s tests -p "test_c2pa_safe_archive.py" -v
       - name: Validate three-file archive package and checksums
         run: python -m unittest discover -s tests -p "test_safe_archive_package.py" -v
+      - name: Validate synthetic three-file connector orchestration and cleanup
+        run: python -m unittest discover -s tests -p "test_safe_drive_transfer.py" -v
