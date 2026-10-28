@@ -131,6 +131,6 @@ jobs:
           listing='{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
           result=$(curl -fsS -H "Authorization: Bearer $token" -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' -d "$listing" http://127.0.0.1:8799/mcp)
           LIST_JSON="$result" python -c 'import json,os; assert [x["name"] for x in json.loads(os.environ["LIST_JSON"])["result"]["tools"]]==["synthetic_archive_status"]; print("Bound MCP tools/list: OK")'
-          curl -fsS -H 'Content-Type: application/json' -d "{\\"token\\":\\"$token\\"}" http://127.0.0.1:8798/__synthetic/revoke >/dev/null
+          curl -fsS -H 'Content-Type: application/json' -d "$(printf '{"token":"%s"}' "$token")" http://127.0.0.1:8798/__synthetic/revoke >/dev/null
           test "$(code "$token")" = 401
           echo "Local OAuth synthetic issue/validate/revoke, audience, scopes, expiry: OK"
