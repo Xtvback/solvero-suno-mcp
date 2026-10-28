@@ -7,7 +7,8 @@ export default new OAuthResourceServer<Env,{userId:string}>({
  requiredScopes:["mcp:read"],
  validateToken:(env)=>async(resource:string,token:string)=>{
   if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(token))return null;
-  return env.AUTH_SERVER.validateToken(resource,token);
+  try{return await env.AUTH_SERVER.validateToken(resource,token);}
+  catch(e){console.error("Synthetic RPC validation error",e instanceof Error?e.name:"unknown",e instanceof Error?e.message:"unknown");throw e;}
  },
  handler:{fetch(request,env,ctx){
   if(!ctx.auth.scope.includes("mcp:read"))return insufficientScope(ctx.auth,["mcp:read"]);
