@@ -1,5 +1,6 @@
 import { OAuthResourceServer, insufficientScope,
   type AuthorizationServerBinding } from "@cloudflare/workers-oauth-provider";
+import {syntheticMcp} from "./transport";
 interface AuthProps { userId: string }
 interface Env { AUTH_SERVER: AuthorizationServerBinding<AuthProps>; APPROVALS_DB: D1Database }
 const RESOURCE = "https://solvero-archive-experimental.example.invalid/mcp";
@@ -15,10 +16,9 @@ export default new OAuthResourceServer<Env,AuthProps>({
         return insufficientScope(ctx.auth,["mcp:read"]);
       const path=new URL(request.url).pathname;
       if(path==="/health")return Response.json({mode:"synthetic-only",uploaded:false});
-      // The MCP transport is deliberately not wired until auth can be proven.
-      return Response.json({error:"mcp_transport_not_activated",
-        authenticated_subject_present:Boolean(ctx.props.userId),
-        uploads_enabled:false},{status:503});
+      if(!ctx.props.userId)return new Response("Missing verified principal",{status:403});
+      if(path!=="/mcp")return new Response("Not found",{status:404});
+      return syntheticMcp(request);
     }
   }
 });
