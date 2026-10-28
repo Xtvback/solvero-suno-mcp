@@ -1,0 +1,6 @@
+{
+  "name": "solvero-mcp-local-test-only",
+  "main": "mcp-server/validation-fixture.ts",
+  "compatibility_date": "2026-10-28",
+  "workers_dev": false
+}
