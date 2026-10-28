@@ -1,0 +1,18 @@
+name: Offline auth security check
+on:
+  push:
+    branches: [feature/free-local-mp3-transfer]
+    paths:
+      - "tests/test_auth_boundary.py"
+      - ".github/workflows/offline-auth-safety.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-auth-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate with fake credentials only
+        run: python -m unittest discover -s tests -p test_auth_boundary.py -v
