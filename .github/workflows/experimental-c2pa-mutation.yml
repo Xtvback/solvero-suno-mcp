@@ -1,0 +1,70 @@
+name: Experimental C2PA metadata mutation
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/experimental-c2pa-mutation.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mutate-public-jpeg:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Install c2patool and Pillow
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG=v0.28.1
+          curl -fLsS "https://github.com/contentauth/c2patool/releases/download/${TAG}/${TAG}-x86_64-unknown-linux-gnu.tar.gz" -o /tmp/c2patool.tar.gz
+          mkdir -p /tmp/c2pa-bin
+          tar xzf /tmp/c2patool.tar.gz -C /tmp/c2pa-bin
+          BIN=$(find /tmp/c2pa-bin -type f -name c2patool -print -quit)
+          test -n "$BIN"
+          chmod +x "$BIN"
+          echo "$(dirname "$BIN")" >> "$GITHUB_PATH"
+          "$BIN" --version
+          python -m pip install "Pillow>=10,<13"
+      - name: Fetch public fixture and create modified temporary copy
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone -q --depth 1 https://github.com/contentauth/c2patool.git /tmp/c2pa-public
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          src=Path("/tmp/c2pa-public/sample/C.jpg")
+          assert src.is_file()
+          original=Path("/tmp/c2pa-original.jpg")
+          altered=Path("/tmp/c2pa-modified.jpg")
+          original.write_bytes(src.read_bytes())
+          # EXIF metadata mutation with Pillow, no original overwrite.
+          with Image.open(original) as im:
+              exif=im.getexif()
+              exif[270]="SOLVERO_SYNTHETIC_METADATA_TEST"
+              im.save(altered, format="JPEG", exif=exif.tobytes())
+          assert original.read_bytes()!=altered.read_bytes()
+          PY
+      - name: Compare hashes and C2PA outcomes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,subprocess
+          from pathlib import Path
+          def check(label,path):
+              b=Path(path).read_bytes()
+              r=subprocess.run(["c2patool",path],capture_output=True,text=True)
+              obj=json.loads(r.stdout) if r.stdout.strip().startswith("{") else {}
+              statuses=obj.get("validation_status") or []
+              codes=[s.get("code","") for s in statuses]
+              active=bool(obj.get("active_manifest"))
+              print(f"{label} bytes={len(b)} sha256={hashlib.sha256(b).hexdigest()} rc={r.returncode} active={active} codes={codes} stderr={r.stderr[-250:]}")
+              return {"active":active,"codes":codes,"rc":r.returncode}
+          orig=check("original","/tmp/c2pa-original.jpg")
+          edited=check("metadata_edited","/tmp/c2pa-modified.jpg")
+          assert orig["active"], "Expected public original fixture to have active manifest"
+          assert any("untrusted" in c for c in orig["codes"]), "Record original trust warning"
+          assert orig != edited, "Expected validation state to change after JPEG EXIF rewrite"
+          print("C2PA_BEFORE_AFTER_COMPARISON=passed")
+          PY
