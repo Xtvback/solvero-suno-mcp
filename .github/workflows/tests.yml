@@ -114,9 +114,23 @@ jobs:
           challenge=$(curl -sD - -o /dev/null http://127.0.0.1:8799/mcp)
           echo "$challenge" | grep -qi 'WWW-Authenticate: Bearer'
           echo "$challenge" | grep -qi 'resource_metadata'
-          for token in invalid-token synthetic-read synthetic-no-scope; do
-            status=$(curl --max-time 3 -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" http://127.0.0.1:8799/mcp)
-            echo "Bound token [$token] status $status"
-            test "$status" = 503 || { cat /tmp/solvero-auth-bound.log /tmp/solvero-mcp-bound.log; exit 1; }
-          done
-          echo "Service Binding fails closed for synthetic/unissued tokens (503): OK"
+          invalid=$(curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer invalid-token' http://127.0.0.1:8799/mcp)
+          test "$invalid" = 401
+          issue() { curl -fsS -H 'Content-Type: application/json' -d "$1" http://127.0.0.1:8798/__synthetic/issue | python -c 'import json,sys; print(json.load(sys.stdin)["token"])'; }
+          token=$(issue '{"scope":"mcp:read"}')
+          no_scope=$(issue '{"scope":""}')
+          wrong_audience=$(issue '{"audience":"http://127.0.0.1:8799/other"}')
+          expired=$(issue '{"expires":-1000}')
+          code() { curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $1" http://127.0.0.1:8799/mcp; }
+          test "$(code "$no_scope")" = 403
+          test "$(code "$wrong_audience")" = 401
+          test "$(code "$expired")" = 401
+          payload='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"synthetic","version":"1"}}}'
+          init=$(curl -fsS -H "Authorization: Bearer $token" -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' -d "$payload" http://127.0.0.1:8799/mcp)
+          INIT_JSON="$init" python -c 'import json,os; assert json.loads(os.environ["INIT_JSON"])["result"]["serverInfo"]["name"]=="solvero-synthetic-experiment"; print("Bound MCP initialize: OK")'
+          listing='{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+          result=$(curl -fsS -H "Authorization: Bearer $token" -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' -d "$listing" http://127.0.0.1:8799/mcp)
+          LIST_JSON="$result" python -c 'import json,os; assert [x["name"] for x in json.loads(os.environ["LIST_JSON"])["result"]["tools"]]==["synthetic_archive_status"]; print("Bound MCP tools/list: OK")'
+          curl -fsS -H 'Content-Type: application/json' -d "{\\"token\\":\\"$token\\"}" http://127.0.0.1:8798/__synthetic/revoke >/dev/null
+          test "$(code "$token")" = 401
+          echo "Local OAuth synthetic issue/validate/revoke, audience, scopes, expiry: OK"
