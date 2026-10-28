@@ -2,6 +2,6 @@
   "private": true,
   "type": "module",
   "scripts": {"check": "tsc --noEmit"},
-  "dependencies": {"@cloudflare/workers-oauth-provider": "^2.0.0"},
-  "devDependencies": {"@cloudflare/workers-types": "^4.20261001.0", "typescript": "^5.9.0"}
+  "dependencies": {"@cloudflare/workers-oauth-provider": "^1.2.4"},
+  "devDependencies": {"@cloudflare/workers-types": "^4.20260901.0", "typescript": "^5.9.0"}
 }
