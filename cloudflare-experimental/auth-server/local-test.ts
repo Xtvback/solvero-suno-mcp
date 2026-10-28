@@ -26,6 +26,7 @@ export default class SyntheticAuth extends WorkerEntrypoint<Env>{
  }
  async validateToken(audience:string,token:string){
   // Test tokens are never genuine OAuth access tokens.
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(token))return null;
   const stored=await this.env.OAUTH_KV.get("fixture:"+token);
   if(!stored)return null;
   const v=JSON.parse(stored) as {scope:string;audience:string;expires:number};
