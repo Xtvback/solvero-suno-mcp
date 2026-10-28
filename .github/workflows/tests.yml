@@ -139,3 +139,24 @@ jobs:
           echo "Local OAuth synthetic issue/validate/revoke, audience, scopes, expiry: OK"
       - name: Enforce synthetic fixture deployment boundary
         run: python -m unittest discover -s cloudflare-experimental/tests -p "test_deployment_boundary.py" -v
+      - name: Test synthetic PKCE authorization code one-time D1 exchange
+        working-directory: cloudflare-experimental
+        run: |
+          npx wrangler dev --config wrangler-auth-binding-local.json --local --ip 127.0.0.1 --port 8798 > /tmp/solvero-pkce.log 2>&1 &
+          p=$!
+          trap 'kill "$p" 2>/dev/null || true' EXIT
+          for i in $(seq 1 25); do
+            status=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8798/.well-known/oauth-authorization-server || true)
+            [ "$status" = 200 ] && break
+            sleep 1
+          done
+          test "$status" = 200 || { cat /tmp/solvero-pkce.log; exit 1; }
+          verifier=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_
+          challenge=$(VERIFIER="$verifier" python -c 'import os,base64,hashlib;print(base64.urlsafe_b64encode(hashlib.sha256(os.environ["VERIFIER"].encode()).digest()).decode().rstrip("="))')
+          code=$(curl -fsS -H 'Content-Type: application/json' -d "$(printf '{"challenge":"%s","client":"synthetic-client","redirect":"http://127.0.0.1/callback"}' "$challenge")" http://127.0.0.1:8798/__synthetic/code | python -c 'import json,sys;print(json.load(sys.stdin)["code"])')
+          post() { curl -s -o /dev/null -w '%{http_code}' -H 'Content-Type: application/json' -d "$(printf '{"code":"%s","verifier":"%s","client":"%s","redirect":"http://127.0.0.1/callback"}' "$code" "$1" "$2")" http://127.0.0.1:8798/__synthetic/exchange; }
+          test "$(post incorrect-verifier synthetic-client)" = 400
+          test "$(post "$verifier" wrong-client)" = 400
+          test "$(post "$verifier" synthetic-client)" = 200
+          test "$(post "$verifier" synthetic-client)" = 400
+          echo "Synthetic PKCE S256: wrong verifier/client rejected, single-use exchange and replay blocked"
