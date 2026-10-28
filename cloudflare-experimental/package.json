@@ -3,5 +3,5 @@
   "type": "module",
   "scripts": {"check": "tsc --noEmit"},
   "dependencies": {"@cloudflare/workers-oauth-provider": "^1.2.4"},
-  "devDependencies": {"@cloudflare/workers-types": "^4.20260901.0", "typescript": "^5.9.0"}
+  "devDependencies": {"@cloudflare/workers-types": "*", "typescript": "^5.9.0"}
 }
