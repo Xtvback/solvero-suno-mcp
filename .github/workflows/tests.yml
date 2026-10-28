@@ -37,3 +37,6 @@ jobs:
       - name: Execute TypeScript D1 gates with synthetic parallel and replay tests
         working-directory: cloudflare-experimental
         run: node --experimental-strip-types --test tests/test-state-gate.mjs
+      - name: Exercise actual local D1 runtime via Miniflare (no deploy)
+        working-directory: cloudflare-experimental
+        run: npm run test:d1
