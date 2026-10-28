@@ -48,6 +48,10 @@ jobs:
               r = subprocess.run(["c2patool", path], capture_output=True, text=True)
               print(f"{label} exit_code={r.returncode}")
               print(f"{label} stderr_tail={r.stderr[-350:]}")
+              if label == "unsigned":
+                  assert r.returncode == 1 and "No claim found" in r.stderr, "Unexpected result for unsigned fixture"
+                  print("unsigned validation_state=no_manifest")
+                  continue
               try:
                   data = json.loads(r.stdout)
               except json.JSONDecodeError:
