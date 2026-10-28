@@ -115,7 +115,8 @@ jobs:
           echo "$challenge" | grep -qi 'WWW-Authenticate: Bearer'
           echo "$challenge" | grep -qi 'resource_metadata'
           invalid=$(curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer invalid-token' http://127.0.0.1:8799/mcp)
-          test "$invalid" = 401
+          echo "Bound invalid-token HTTP status: $invalid"
+          test "$invalid" = 401 || { cat /tmp/solvero-auth-bound.log /tmp/solvero-mcp-bound.log; exit 1; }
           issue() { curl -fsS -H 'Content-Type: application/json' -d "$1" http://127.0.0.1:8798/__synthetic/issue | python -c 'import json,sys; print(json.load(sys.stdin)["token"])'; }
           token=$(issue '{"scope":"mcp:read"}')
           no_scope=$(issue '{"scope":""}')
