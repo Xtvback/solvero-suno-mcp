@@ -24,3 +24,11 @@ jobs:
         run: node --check cloudflare-experimental/src/index.js
       - name: Validate OAuth split-worker safety architecture
         run: python -m unittest discover -s cloudflare-experimental/tests -p "test_oauth_architecture.py" -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Compile Cloudflare OAuth TypeScript against official package
+        working-directory: cloudflare-experimental
+        run: |
+          npm install --no-audit --no-fund
+          npm run check
