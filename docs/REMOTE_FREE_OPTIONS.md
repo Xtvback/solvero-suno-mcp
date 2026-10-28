@@ -28,3 +28,12 @@
 
 ## Segurança
 Cloudflare Browser Run e GitHub Actions têm quotas, não garantias de gratuidade em qualquer plano/configuração. Bloquear faturação/limites e nunca iniciar pagamentos. É essencial não publicar downloads nem credenciais em URLs, commits, artefactos ou logs.
+
+## Teste executado em 28-10-2026: transferência chat → Google Drive
+- Criado um ficheiro TXT sem dados privados no ambiente ChatGPT.
+- Upload pela ligação oficial Google Drive diretamente para a pasta Músicas_ da Static Riot.
+- Leitura posterior confirmou bytes/texto e pasta de destino.
+- Ficheiro de teste apagado após validação.
+- Criado MP3 sintético de 1 segundo (silêncio) com a capa PNG da Static Riot e tags ID3; leitura de controlo confirmou artista, título e capa incorporada. Não é uma música Suno e não foi enviado à Drive.
+- **Resultado:** upload e incorporação da capa funcionam; bloqueio remanescente exclusivo = transporte do MP3 Suno autenticado do browser remoto para ambiente ChatGPT.
+- Não utilizar TinyFish pago para esta etapa sem validação de custo zero. Não consumir quotas Suno em testes.
