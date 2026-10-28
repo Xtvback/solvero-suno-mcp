@@ -1,0 +1,81 @@
+name: Experimental synthetic MP3 C2PA integrity
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/experimental-mp3-c2pa.yml"]
+permissions:
+  contents: read
+jobs:
+  mp3-c2pa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Install official c2patool and free dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG=v0.28.1
+          curl -fLsS "https://github.com/contentauth/c2patool/releases/download/${TAG}/${TAG}-x86_64-unknown-linux-gnu.tar.gz" -o /tmp/c2patool.tar.gz
+          mkdir -p /tmp/c2pa-bin
+          tar xzf /tmp/c2patool.tar.gz -C /tmp/c2pa-bin
+          BIN=$(find /tmp/c2pa-bin -type f -name c2patool -print -quit)
+          test -n "$BIN"
+          chmod +x "$BIN"
+          echo "$(dirname "$BIN")" >> "$GITHUB_PATH"
+          "$BIN" --version
+          python -m pip install "mutagen>=1.47,<2" "Pillow>=10,<13"
+          ffmpeg -version | head -n 1
+      - name: Make synthetic tone, sign and edit isolated copies
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/mp3c2pa
+          ffmpeg -hide_banner -loglevel error -f lavfi -i "sine=frequency=440:duration=1" -codec:a libmp3lame -q:a 6 -y /tmp/mp3c2pa/unsigned.mp3
+          c2patool /tmp/mp3c2pa/unsigned.mp3 --config '{"assertions":[]}' --create algorithmicMedia --output /tmp/mp3c2pa/signed.mp3 >/tmp/mp3c2pa/sign-report.json
+          python - <<'PY'
+          from pathlib import Path
+          from mutagen.id3 import ID3, APIC
+          from PIL import Image
+          from io import BytesIO
+          folder=Path("/tmp/mp3c2pa")
+          original=(folder/"signed.mp3").read_bytes()
+          assert len(original)>1000
+          (folder/"apic.mp3").write_bytes(original)
+          img=Image.new("RGB",(32,32),(80,100,120))
+          buf=BytesIO(); img.save(buf,format="JPEG")
+          tags=ID3(folder/"apic.mp3")
+          tags.add(APIC(encoding=3,mime="image/jpeg",type=3,desc="Synthetic artwork",data=buf.getvalue()))
+          tags.save(folder/"apic.mp3")
+          # Minimal append-only edit. Does not rewrite existing signed audio, adds ID3v1 TAG at end.
+          # This might still alter the covered hash and is tested, never assumed safe.
+          (folder/"append.mp3").write_bytes(original+b"TAG"+b"synthetic test".ljust(125,b" "))
+          assert (folder/"apic.mp3").read_bytes()!=original
+          assert (folder/"append.mp3").read_bytes().startswith(original)
+          PY
+      - name: Report independent hash, presence, signature and trust
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, subprocess
+          from pathlib import Path
+          root=Path("/tmp/mp3c2pa")
+          results={}
+          for label in ("signed","apic","append"):
+              f=root/(label+".mp3"); raw=f.read_bytes()
+              r=subprocess.run(["c2patool",str(f)],capture_output=True,text=True)
+              obj=json.loads(r.stdout) if r.stdout.lstrip().startswith("{") else {}
+              codes=[s.get("code") for s in (obj.get("validation_status") or [])]
+              bad=[c for c in codes if c and (".mismatch" in c or ".invalid" in c or ".failure" in c)]
+              results[label]={"sha256":hashlib.sha256(raw).hexdigest(),"bytes":len(raw),
+                    "exit_code":r.returncode,"manifest_present":bool(obj.get("active_manifest")),
+                    "integrity_errors":bad,"trust_warnings":[c for c in codes if c and "untrusted" in c],
+                    "all_codes":codes,"error":r.stderr[-170:]}
+              print(label,json.dumps(results[label],sort_keys=True))
+          assert results["signed"]["manifest_present"], "Signing did not produce embedded C2PA manifest"
+          assert not results["signed"]["integrity_errors"], "Signed reference itself has integrity errors"
+          assert results["signed"]["sha256"]!=results["apic"]["sha256"]
+          assert results["signed"]["sha256"]!=results["append"]["sha256"]
+          print("EXPERIMENT_STATUS=completed")
+          PY
