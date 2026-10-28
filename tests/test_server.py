@@ -28,7 +28,8 @@ spec.loader.exec_module(server)
 
 class OfflineTests(unittest.TestCase):
     def test_tools_exist(self):
-        for name in ["list_songs","prepare_song_brief","save_song_record"]:
+        for name in ["list_songs","prepare_song_brief","prepare_music_project",
+                     "prepare_release_handoff","save_song_record"]:
             self.assertTrue(callable(getattr(server, name)))
     def test_brief_and_catalogue(self):
         with tempfile.TemporaryDirectory() as d:

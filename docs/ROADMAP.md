@@ -19,5 +19,17 @@
 ## Provider integrations
 Suno: verify the official developer/API offering, account eligibility, licensing and permitted operations before adding any API calls. Avoid unofficial scraping or credential sharing.
 
+## Chat production workflow
+- [x] Produce one dry-run contract for concept, title, lyrics, Suno request,
+  cover brief and DistroKid handoff.
+- [x] Convert generation lyrics into distribution-ready plain lyrics without
+  section labels.
+- [x] Validate local WAV metadata and JPEG dimensions without uploading files.
+- [x] Keep the final DistroKid submission as a manual user click.
+- [ ] Add the verified official Suno generation request only after account,
+  endpoint, quota and cost authorization.
+- [ ] Generate a real cover only after the user approves its creative brief.
+- [ ] Exercise the handoff with real user-approved audio and cover files.
+
 ## Verification
 Offline tests cover syntax, OAuth validation and MCP routing. Live checks cover the Render health, metadata and unauthorized boundary. They do not test a real Suno account, a completed ChatGPT login or publication.

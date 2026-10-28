@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
+from production_workflow import prepare_music_project as build_music_project
+from production_workflow import prepare_release_handoff as build_release_handoff
 
 PUBLIC_HOST = os.environ.get("SOLVERO_PUBLIC_HOST", "solvero-suno-mcp.onrender.com")
 app = FastMCP(
@@ -39,6 +41,27 @@ def prepare_song_brief(title: str, artist: str, concept: str, style: str, langua
     return {"title": title.strip(), "artist": artist.strip(), "concept": concept.strip(),
             "style_prompt": style.strip(), "language": language.strip(),
             "status": "draft", "sent_to_suno": False}
+
+@app.tool()
+def prepare_music_project(title: str, artist: str, concept: str, style: str,
+                          lyrics: str = "", language: str = "pt-PT",
+                          cover_direction: str = "", genre: str = "",
+                          release_date: str = "", explicit: bool = False,
+                          instrumental: bool = False) -> dict:
+    """Prepare Suno generation, cover and DistroKid handoff; makes no provider calls."""
+    return build_music_project(title=title, artist=artist, concept=concept, style=style,
+                               lyrics=lyrics, language=language, cover_direction=cover_direction,
+                               genre=genre, release_date=release_date, explicit=explicit,
+                               instrumental=instrumental)
+
+@app.tool()
+def prepare_release_handoff(title: str, artist: str, audio_path: str, cover_path: str,
+                            genre: str = "", lyrics: str = "",
+                            release_date: str = "") -> dict:
+    """Validate local assets and prepare arguments for Solvero DistroKid MCP; never uploads."""
+    return build_release_handoff(title=title, artist=artist, audio_path=audio_path,
+                                 cover_path=cover_path, genre=genre, lyrics=lyrics,
+                                 release_date=release_date)
 
 @app.tool()
 def save_song_record(title: str, artist: str, style: str, lyrics: str = "", suno_url: str = "") -> dict:
