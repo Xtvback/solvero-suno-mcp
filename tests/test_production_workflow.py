@@ -7,6 +7,11 @@ from production_workflow import plain_distribution_lyrics,prepare_music_project,
 
 
 class ProductionWorkflowTests(unittest.TestCase):
+    def test_docker_image_includes_workflow_module(self):
+        dockerfile = (Path(__file__).parents[1] / "Dockerfile").read_text(encoding="utf-8")
+        copy_lines = [line for line in dockerfile.splitlines() if line.startswith("COPY ")]
+        self.assertTrue(any("production_workflow.py" in line for line in copy_lines))
+
     def test_complete_creative_plan_is_dry_run(self):
         result=prepare_music_project(title="Luz do Tejo",artist="Solvero",concept="Lisboa à noite",
             style="synth-pop melancólico",lyrics="[Verse]\nA cidade acorda\n\n[Chorus]\nLuz sobre o Tejo",
