@@ -8,7 +8,7 @@ async function fixture(){
  const mf=new Miniflare({modules:true,script:'export default {fetch(){return new Response("offline")}}',
  d1Databases:{DB:"00000000-0000-4000-8000-000000000001"}});
  const db=await mf.getD1Database("DB");
- await db.exec(schema.replace(/^\\s*--.*$/gm,"").trim());
+ await db.exec(schema.split("\n").filter(line=>!line.trim().startsWith("--")).join("\n").trim());
  return {db,mf};
 }
 test("actual local D1: concurrent login claims, expiry and browser binding",async()=>{
