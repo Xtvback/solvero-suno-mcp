@@ -9,7 +9,7 @@ async function fixture(){
  d1Databases:{DB:"00000000-0000-4000-8000-000000000001"}});
  try {
  const db=await mf.getD1Database("DB");
- await db.exec(schema.split("\n").filter(line=>!line.trim().startsWith("--")).join("\n").trim());
+ for(const stmt of schema.split("\n").filter(line=>!line.trim().startsWith("--")).join("\n").split(";").map(x=>x.replace(/\s+/g," ").trim()).filter(Boolean)) await db.prepare(stmt).run();
  return {db,mf};
  } catch(error) {await mf.dispose(); throw error;}
 
