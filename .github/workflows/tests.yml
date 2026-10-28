@@ -30,7 +30,7 @@ jobs:
       - name: Compile Cloudflare OAuth TypeScript against official package
         working-directory: cloudflare-experimental
         run: |
-          npm install --no-audit --no-fund
+          npm ci --no-audit --no-fund
           npm run check
       - name: Validate OAuth D1 one-time state and concurrency
         run: python -m unittest discover -s cloudflare-experimental/tests -p "test_oauth_d1_atomicity.py" -v
@@ -65,7 +65,7 @@ jobs:
         run: timeout 45s node --experimental-strip-types --test tests/oauth-flow.test.mjs
       - name: Verify synthetic MCP Streamable HTTP JSON-RPC transport
         working-directory: cloudflare-experimental
-        run: node --experimental-strip-types --test tests/mcp-transport.test.mjs
+        run: npm run test:catalogue
       - name: Official MCP SDK client interoperability over localhost HTTP
         working-directory: cloudflare-experimental
         run: timeout 45s node --experimental-strip-types --test tests/official-mcp-client.test.mjs
@@ -133,7 +133,7 @@ jobs:
           INIT_JSON="$init" python -c 'import json,os; assert json.loads(os.environ["INIT_JSON"])["result"]["serverInfo"]["name"]=="solvero-synthetic-experiment"; print("Bound MCP initialize: OK")'
           listing='{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
           result=$(curl -fsS -H "Authorization: Bearer $token" -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' -d "$listing" http://127.0.0.1:8799/mcp)
-          LIST_JSON="$result" python -c 'import json,os; assert [x["name"] for x in json.loads(os.environ["LIST_JSON"])["result"]["tools"]]==["synthetic_archive_status"]; print("Bound MCP tools/list: OK")'
+          LIST_JSON="$result" python -c 'import json,os; assert [x["name"] for x in json.loads(os.environ["LIST_JSON"])["result"]["tools"]]==["synthetic_archive_status","list_catalogue"]; print("Bound MCP tools/list: OK")'
           curl -fsS -H 'Content-Type: application/json' -d "$(printf '{"token":"%s"}' "$token")" http://127.0.0.1:8798/__synthetic/revoke >/dev/null
           test "$(code "$token")" = 401
           echo "Local OAuth synthetic issue/validate/revoke, audience, scopes, expiry: OK"

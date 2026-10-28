@@ -3,7 +3,8 @@
   "type": "module",
   "scripts": {
     "check": "tsc --noEmit",
-    "test:d1": "node --experimental-strip-types --test tests/local-d1.test.mjs"
+    "test:d1": "node --experimental-strip-types --test tests/local-d1.test.mjs",
+    "test:catalogue": "node --experimental-strip-types --test tests/catalogue.test.mjs tests/mcp-transport.test.mjs"
   },
   "dependencies": {
     "@cloudflare/workers-oauth-provider": "^1.2.4"

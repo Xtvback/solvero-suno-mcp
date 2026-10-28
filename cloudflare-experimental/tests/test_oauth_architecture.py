@@ -16,7 +16,7 @@ class OAuthArchitectureTests(unittest.TestCase):
    self.assertIn(x,helper)
  def test_resource_verification_and_uploads_off(self):
   mcp=(ROOT/"mcp-server/index.ts").read_text()
-  for s in ("OAuthResourceServer","validateToken","insufficientScope","syntheticMcp","Missing verified principal"):self.assertIn(s,mcp)
+  for s in ("OAuthResourceServer","validateToken","insufficientScope","syntheticMcp","Missing verified principal","owner_user_id","Catalogue owner mismatch"):self.assertIn(s,mcp)
  def test_no_live_endpoints(self):
   auth=(ROOT/"auth-server/index.ts").read_text()
   mcp=(ROOT/"mcp-server/index.ts").read_text()

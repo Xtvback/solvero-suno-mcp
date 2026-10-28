@@ -4,6 +4,7 @@ __pycache__/
 .env
 .env.*
 data/
+node_modules/
 
 # Sensitive browser authentication data
 playwright/.auth/
