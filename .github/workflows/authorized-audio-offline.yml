@@ -20,3 +20,5 @@ jobs:
         run: python -m unittest discover -s tests -p "test_archive_rules.py" -v
       - name: Validate safe Drive handoff manifest
         run: python -m unittest discover -s tests -p "test_drive_handoff_manifest.py" -v
+      - name: Validate Drive inbox safety gates
+        run: python -m unittest discover -s tests -p "test_drive_inbox_adapter.py" -v
