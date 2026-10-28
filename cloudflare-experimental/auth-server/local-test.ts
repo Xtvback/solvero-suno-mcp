@@ -1,7 +1,8 @@
 // STRICTLY LOCAL SYNTHETIC FIXTURE. Not an OAuth authorization grant or deployable issuer.
 import {OAuthAuthorizationServer} from "@cloudflare/workers-oauth-provider";
 import {WorkerEntrypoint} from "cloudflare:workers";
-interface Env {OAUTH_KV:KVNamespace}
+import {syntheticCodeRequest,syntheticCodeExchange} from "./synthetic-code";
+interface Env {OAUTH_KV:KVNamespace; APPROVALS_DB:D1Database}
 const issuer="http://127.0.0.1:8798";
 const resource="http://127.0.0.1:8799/mcp";
 const server=new OAuthAuthorizationServer<Env>({issuer,resources:[resource],scopesSupported:["mcp:read"],clientIdMetadataDocumentEnabled:false});
@@ -10,6 +11,16 @@ export default class SyntheticAuth extends WorkerEntrypoint<Env>{
  async fetch(request:Request){
   const url=new URL(request.url);
   if(url.pathname==="/authorize")return new Response("Synthetic auth disabled",{status:503});
+  if(url.pathname==="/__synthetic/code"||url.pathname==="/__synthetic/exchange"){
+   if(!local(request)||request.method!=="POST")return new Response("Not permitted",{status:403});
+   const body=await request.json() as {challenge?:string;code?:string;verifier?:string;client?:string;redirect?:string};
+   if(url.pathname.endsWith("/code")){
+    const code=await syntheticCodeRequest(this.env.APPROVALS_DB,body.challenge??"",body.redirect??"",body.client??"");
+    return code?Response.json({code,synthetic:true},{headers:{"cache-control":"no-store"}}):new Response("Invalid PKCE request",{status:400});
+   }
+   const ok=await syntheticCodeExchange(this.env.APPROVALS_DB,body.code??"",body.verifier??"",body.redirect??"",body.client??"");
+   return Response.json({exchanged:ok,synthetic:true},{status:ok?200:400,headers:{"cache-control":"no-store"}});
+  }
   if(url.pathname==="/__synthetic/issue"||url.pathname==="/__synthetic/revoke"){
    if(!local(request)||request.method!=="POST")return new Response("Not permitted",{status:403});
    const body=await request.json() as {token?:string;scope?:string;audience?:string;expires?:number};
