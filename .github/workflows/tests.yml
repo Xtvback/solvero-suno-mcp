@@ -34,3 +34,6 @@ jobs:
           npm run check
       - name: Validate OAuth D1 one-time state and concurrency
         run: python -m unittest discover -s cloudflare-experimental/tests -p "test_oauth_d1_atomicity.py" -v
+      - name: Execute TypeScript D1 gates with synthetic parallel and replay tests
+        working-directory: cloudflare-experimental
+        run: node --experimental-strip-types --test tests/test-state-gate.mjs
