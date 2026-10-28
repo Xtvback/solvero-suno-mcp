@@ -52,7 +52,10 @@ class FakeValidator:
 class AuthBoundaryTests(unittest.TestCase):
     def test_public_health_and_metadata(self):
         with TestClient(remote.application) as client:
-            self.assertEqual(client.get("/health").json(), {"status": "ok"})
+            health = client.get("/health").json()
+            self.assertEqual(health["status"], "ok")
+            self.assertEqual(health["release"], "chat-production-v1")
+            self.assertIn("prepare_music_project", health["tools"])
             response = client.get("/.well-known/oauth-protected-resource")
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.json()["resource"], ENV["AUTH0_AUDIENCE"])

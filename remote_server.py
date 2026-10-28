@@ -14,7 +14,8 @@ settings = AuthSettings.from_env()
 validator = Auth0JWTValidator(settings)
 
 async def health(request):
-    return JSONResponse({"status": "ok"})
+    return JSONResponse({"status": "ok", "release": "chat-production-v1",
+                         "tools": ["prepare_music_project", "prepare_release_handoff"]})
 
 async def protected_resource_metadata(request):
     return JSONResponse(
