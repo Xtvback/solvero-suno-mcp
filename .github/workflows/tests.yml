@@ -137,3 +137,5 @@ jobs:
           curl -fsS -H 'Content-Type: application/json' -d "$(printf '{"token":"%s"}' "$token")" http://127.0.0.1:8798/__synthetic/revoke >/dev/null
           test "$(code "$token")" = 401
           echo "Local OAuth synthetic issue/validate/revoke, audience, scopes, expiry: OK"
+      - name: Enforce synthetic fixture deployment boundary
+        run: python -m unittest discover -s cloudflare-experimental/tests -p "test_deployment_boundary.py" -v
