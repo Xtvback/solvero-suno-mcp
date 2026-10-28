@@ -11,5 +11,12 @@
       "binding": "OAUTH_KV",
       "id": "00000000000000000000000000000000"
     }
+  ],
+  "d1_databases": [
+    {
+      "binding": "APPROVALS_DB",
+      "database_name": "synthetic-pkce-local",
+      "database_id": "00000000-0000-4000-8000-000000000012"
+    }
   ]
 }
