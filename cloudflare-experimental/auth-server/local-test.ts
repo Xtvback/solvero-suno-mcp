@@ -10,6 +10,11 @@ export default class SyntheticAuth extends WorkerEntrypoint<Env>{
  async fetch(request:Request){
   const url=new URL(request.url);
   if(url.pathname==="/authorize")return new Response("Synthetic auth disabled",{status:503});
+  if(url.pathname==="/__synthetic/check"&&local(request)&&request.method==="POST"){
+   const body=await request.json() as {token:string};
+   try {const checked=await this.validateToken(resource,body.token);return Response.json({valid:Boolean(checked),scope:checked?.scope??[]});}
+   catch(error){return Response.json({error:error instanceof Error?error.message:"unknown"},{status:500});}
+  }
   if(url.pathname==="/__synthetic/issue"||url.pathname==="/__synthetic/revoke"){
    if(!local(request)||request.method!=="POST")return new Response("Not permitted",{status:403});
    const body=await request.json() as {token?:string;scope?:string;audience?:string;expires?:number};
