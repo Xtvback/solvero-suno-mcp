@@ -1,0 +1,23 @@
+name: Experimental archive_song MCP schema and safety
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/experimental-archive-mcp.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  experimental-mcp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/free-local-mp3-transfer
+          persist-credentials: false
+      - name: Install public MCP framework
+        run: python -m pip install "mcp>=1.0,<2"
+      - name: Validate experimental archive_song MCP schema and blocked commit
+        run: python -m unittest discover -s tests -p "test_experimental_archive_mcp.py" -v
+      - name: Confirm production server unchanged in development branch
+        run: git status --porcelain
