@@ -1,0 +1,20 @@
+name: Authorized audio intake offline tests
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  synthetic-audio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/free-local-mp3-transfer
+          persist-credentials: false
+      - name: Run synthetic tests (no Suno access)
+        run: python -m unittest discover -s tests -p "test_authorized_audio_intake.py" -v
+      - name: Check archive planner
+        run: python -m unittest discover -s tests -p "test_archive_rules.py" -v
