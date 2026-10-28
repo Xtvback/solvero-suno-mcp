@@ -55,5 +55,12 @@ def save_song_record(title: str, artist: str, style: str, lyrics: str = "", suno
     tmp.replace(CATALOGUE)
     return record
 
+
+@app.tool()
+def plan_archive(suno_url: str, band: str, title: str, existing_names: list[str] | None = None) -> dict:
+    """Prepare a free Suno-to-Drive archive plan with duplicate checks; does not download or upload."""
+    from archive_rules import plan_song_archive
+    return plan_song_archive(suno_url, band, title, existing_names)
+
 if __name__ == "__main__":
     app.run(transport="stdio")
