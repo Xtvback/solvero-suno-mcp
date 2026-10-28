@@ -28,3 +28,5 @@ jobs:
         run: python -m unittest discover -s tests -p "test_safe_archive_package.py" -v
       - name: Validate synthetic three-file connector orchestration and cleanup
         run: python -m unittest discover -s tests -p "test_safe_drive_transfer.py" -v
+      - name: Validate connector adapter identity gates and failure scenarios
+        run: python -m unittest discover -s tests -p "test_drive_connector_adapter.py" -v
