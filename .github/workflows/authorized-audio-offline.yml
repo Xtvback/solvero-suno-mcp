@@ -24,3 +24,5 @@ jobs:
         run: python -m unittest discover -s tests -p "test_drive_inbox_adapter.py" -v
       - name: Validate C2PA-safe original immutability
         run: python -m unittest discover -s tests -p "test_c2pa_safe_archive.py" -v
+      - name: Validate three-file archive package and checksums
+        run: python -m unittest discover -s tests -p "test_safe_archive_package.py" -v
