@@ -58,3 +58,6 @@ jobs:
           c=$(status -X POST -d 'id=synthetic&csrf=synthetic&decision=approve' http://127.0.0.1:8788/consent)
           echo "Local OAuth route statuses: authorize=$a callback=$b consent=$c"
           test "$a" = 503 && test "$b" = 503 && test "$c" = 403 || { cat /tmp/solvero-auth-wrangler.log; exit 1; }
+      - name: Run synthetic OAuth flow with local D1 and mocked Google
+        working-directory: cloudflare-experimental
+        run: timeout 45s node --experimental-strip-types --test tests/oauth-flow.test.mjs
