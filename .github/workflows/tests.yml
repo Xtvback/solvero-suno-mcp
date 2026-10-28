@@ -52,7 +52,8 @@ jobs:
             sleep 1
           done
           status() { curl -sS -o /dev/null -w '%{http_code}' "$@"; }
-          a=$(status http://127.0.0.1:8788/authorize)
+          a=$(status http://127.0.0.1:8788/authorize || true)
+          if [ "$a" = "000" ]; then cat /tmp/solvero-auth-wrangler.log; exit 1; fi
           b=$(status 'http://127.0.0.1:8788/google/callback?state=synthetic&code=synthetic')
           c=$(status -X POST -d 'id=synthetic&csrf=synthetic&decision=approve' http://127.0.0.1:8788/consent)
           echo "Local OAuth route statuses: authorize=$a callback=$b consent=$c"
